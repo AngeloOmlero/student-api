@@ -18,29 +18,46 @@ class StudentServiceImplTest {
     private val studentRepository: StudentRepository = mockk()
     private val courseRepository: CourseRepository = mockk()
     private val auditService: AuditService = mockk(relaxed = true)
-    private val studentService = StudentServiceImpl(studentRepository,courseRepository,auditService)
+    private lateinit var studentService: StudentServiceImpl
 
-    private val courseCS = Course(id = 1, name = "CS")
-    private val courseIT = Course(id = 2, name = "IT")
-    private val student = Student(
-        id = 1,
-        name = "Angelo",
-        email = "angelo@gmail.com",
-        course = courseCS
-    )
+    private lateinit var courseCS: Course
+    private lateinit var courseIT: Course
+    private lateinit var student: Student
+
+    companion object{
+        const val EVENT_CREATE = "CREATE_STUDENT"
+        const val EVENT_DELETE = "DELETE_STUDENT"
+        const val EVENT_UPDATE = "UPDATE_STUDENT"
+        const val EVENT_GET_ALL = "GET_ALL_STUDENTS"
+        const val EVENT_GROUP = "GROUP_BY_COURSE"
+    }
+
+
+    @BeforeEach
+    fun setup(){
+        studentService = StudentServiceImpl(studentRepository,courseRepository,auditService)
+        courseCS = Course(id = 1, name = "CS")
+        courseIT = Course(id = 2, name = "IT")
+        student = Student(
+            id = 1,
+            name = "Angelo",
+            email = "angelo@gmail.com",
+            course = courseCS
+        )
+    }
 
     @Test
     fun `should create new student when course exists`(){
         val request = CreateStudentRequest("Angelo","angelo@gmail.com",23,"CS")
         every { courseRepository.findByNameIgnoreCase(request.courseName) } returns courseCS
-        every { studentRepository.save(any()) }  answers {firstArg()}
+        every { studentRepository.save(any()) }  returnsArgument 0
 
         val result = studentService.save(request)
 
         assertEquals("Angelo",result.name)
         assertEquals("CS",result.courseName)
         verify {
-            auditService.logEvent("CREATE_STUDENT", any(),eq("system"))
+            auditService.logEvent(EVENT_CREATE, any(),eq("system"))
             studentRepository.save(any())
         }
 
@@ -50,9 +67,9 @@ class StudentServiceImplTest {
     @Test
     fun `should create new student and new course when course does not exist`(){
         val request = CreateStudentRequest("Luna","luna@email.com",20,"BSCPE")
-        val newCourse = Course(id = 3, name = "BSCPE")
 
-        every { courseRepository.findByNameIgnoreCase("BSCPE") } returns null
+
+        every { courseRepository.findByNameIgnoreCase(request.courseName) } returns null
         every { courseRepository.save(any()) } returns Course(id = 3, name = "BSCPE")
         every { studentRepository.save(any()) } answers {firstArg()}
         every { auditService.logEvent(any(), any(), any()) } just Runs
@@ -65,7 +82,7 @@ class StudentServiceImplTest {
             courseRepository.findByNameIgnoreCase("BSCPE")
             courseRepository.save(any())
             studentRepository.save(any())
-            auditService.logEvent("CREATE_STUDENT",any(),eq("system"))
+            auditService.logEvent(EVENT_CREATE,any(),eq("system"))
         }
 
     }
@@ -81,7 +98,7 @@ class StudentServiceImplTest {
         val result = studentService.getAll(mockk(relaxed = true),pageable)
         assertEquals(1,result.totalElements)
         assertEquals("Angelo", result.content.first().name)
-        verify { auditService.logEvent("GET_ALL_STUDENTS",any(),eq("system")) }
+        verify { auditService.logEvent(EVENT_GET_ALL,any(),eq("system")) }
     }
 
     @Test
@@ -118,16 +135,11 @@ class StudentServiceImplTest {
         assertEquals(2, grouped.size)
         assertTrue(grouped.containsKey("CS"))
         assertTrue(grouped.containsKey("IT"))
-        verify { auditService.logEvent("GROUP_BY_COURSE", any()) }
+        verify { auditService.logEvent(EVENT_GROUP, any()) }
     }
     @Test
     fun `should update student when found`() {
-        val request = UpdateStudentRequest(
-            name = "Angelo Updated",
-            age = 21,
-            email = "angelo.updated@example.com",
-            courseName = "IT"
-        )
+        val request = UpdateStudentRequest("Angelo","angelonew@gmail.com",23,"IT")
 
         every { studentRepository.findById(1L) } returns Optional.of(student)
         every { courseRepository.findByNameIgnoreCase("IT") } returns courseIT
@@ -135,22 +147,17 @@ class StudentServiceImplTest {
 
         val result = studentService.update(1L, request)
 
-        assertEquals("Angelo Updated", result.name)
+        assertEquals("Angelo", result.name)
         assertEquals("IT", result.courseName)
         verify {
-            auditService.logEvent("UPDATE_STUDENT", any())
+            auditService.logEvent(EVENT_UPDATE, any())
             studentRepository.save(any())
         }
     }
 
     @Test
     fun `should create new course if not found when updating student`() {
-        val request = UpdateStudentRequest(
-            name = "Mina",
-            age = 22,
-            email = "mina@example.com",
-            courseName = "BSCE"
-        )
+        val request = UpdateStudentRequest("Mina","mina@email.com",21,"BSCE")
 
         every { studentRepository.findById(1L) } returns Optional.of(student)
         every { courseRepository.findByNameIgnoreCase("BSCE") } returns null
@@ -169,13 +176,8 @@ class StudentServiceImplTest {
     }
 
     @Test
-    fun `should throw StudentNotFoundException when updating non-existent student`() {
-        val request = UpdateStudentRequest(
-            name = "Ghost",
-            age = 25,
-            email = "ghost@example.com",
-            courseName = "IT"
-        )
+    fun `should throw StudentNotFoundException when updating non-existent student by id`() {
+        val request = UpdateStudentRequest("Ghost","ghost@email.com",22,"BSCPE")
 
         every { studentRepository.findById(100L) } returns Optional.empty()
 
@@ -194,7 +196,7 @@ class StudentServiceImplTest {
         studentService.delete(1L)
 
         verify {
-            auditService.logEvent("DELETE_STUDENT", any())
+            auditService.logEvent(EVENT_DELETE, any())
             studentRepository.deleteById(1L)
         }
     }

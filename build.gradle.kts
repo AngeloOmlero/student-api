@@ -58,4 +58,6 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+    jvmArgs("-XX:+EnableDynamicAgentLoading")
+    jvmArgs("-Xshare:off")
 }
