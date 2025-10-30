@@ -3,6 +3,7 @@ package com.example.student_api.exception
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -31,6 +32,10 @@ class GlobalExceptions {
     @ExceptionHandler(Exception::class)
     fun handleGeneric(ex: Exception): ResponseEntity<Map<String, Any>> =
         errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.message ?: "Unexpected error occurred")
+
+    @ExceptionHandler(BadCredentialsException::class)
+    fun handleCredentials(ex: BadCredentialsException) =
+        errorResponse(HttpStatus.UNAUTHORIZED,ex.message?:"Invalid Credentials")
 
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ResponseEntity<Map<String, Any>> {

@@ -25,6 +25,7 @@ class AuthController(
     }
 
     @PostMapping("/login")
+    @ResponseStatus(HttpStatus.OK)
     fun login(@RequestBody authRequestDto: AuthRequestDto): AuthResponseDto {
         return userService.login(authRequestDto)
     }

@@ -9,6 +9,7 @@ import com.example.student_api.model.Users
 import com.example.student_api.repository.UserRepository
 import com.example.student_api.security.JWTUtil
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
@@ -41,15 +42,24 @@ class UserService(
         return UserDto(savedUser.id, savedUser.username, savedUser.role.name)
     }
 
+
     fun login(authRequestDto: AuthRequestDto): AuthResponseDto{
-        val authentication = authenticationManager.authenticate(
-            UsernamePasswordAuthenticationToken(authRequestDto.username, authRequestDto.password)
-        )
-        SecurityContextHolder.getContext().authentication = authentication
+        return try {
+            val authentication = authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(authRequestDto.username, authRequestDto.password)
+            )
 
-        val userDetails = authentication.principal as UserDetails
-        val token = jwtUtil.generateToken(userDetails)
+            SecurityContextHolder.getContext().authentication = authentication
 
-        return AuthResponseDto(token)
+            val userDetails = authentication.principal as UserDetails
+            val token = jwtUtil.generateToken(userDetails)
+
+            AuthResponseDto(token)
+
+        } catch (ex:BadCredentialsException) {
+            throw BadCredentialsException("Invalid username or password")
+        } catch (ex: Exception) {
+            throw RuntimeException("Authentication failed: ${ex.message}")
+        }
     }
 }
