@@ -1,7 +1,6 @@
 package com.example.student_api.authentication
 
 import com.example.student_api.dto.CreateUserDto
-import com.example.student_api.model.Users
 import com.example.student_api.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -101,7 +100,7 @@ class AuthControllerTest {
     }
 
     @Test
-    fun `should return error for invalid credentials`(){
+    fun `should return 401 for invalid credentials`(){
         mockMvc.post("/api/auth/login"){
             contentType = MediaType.APPLICATION_JSON
             content = """{"username":"unknown","password":"wrong"}"""

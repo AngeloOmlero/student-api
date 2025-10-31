@@ -4,6 +4,7 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -36,7 +37,9 @@ class GlobalExceptions {
     @ExceptionHandler(BadCredentialsException::class)
     fun handleCredentials(ex: BadCredentialsException) =
         errorResponse(HttpStatus.UNAUTHORIZED,ex.message?:"Invalid Credentials")
-
+    @ExceptionHandler(UsernameNotFoundException::class)
+    fun usernameNotFoundException(ex: UsernameNotFoundException) =
+        errorResponse(HttpStatus.UNAUTHORIZED,ex.message?:"Invalid Username")
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ResponseEntity<Map<String, Any>> {
         val message = ex.rootCause?.message?.let { detail ->

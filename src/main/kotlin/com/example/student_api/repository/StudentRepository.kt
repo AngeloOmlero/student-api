@@ -6,5 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
 
 @Repository
-interface StudentRepository : JpaRepository<Student, Long>, JpaSpecificationExecutor<Student>
+interface StudentRepository : JpaRepository<Student, Long>, JpaSpecificationExecutor<Student>{
+    fun findByName(name: String): Student?
+}
 

@@ -6,12 +6,15 @@ import com.example.student_api.exception.StudentNotFoundException
 import com.example.student_api.model.Course
 import com.example.student_api.model.Student
 import com.example.student_api.repository.CourseRepository
+import com.example.student_api.repository.StudentFilter
 import com.example.student_api.repository.StudentRepository
 import io.mockk.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.*
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.domain.Specification
 import java.util.*
 
 class StudentServiceImplTest {
@@ -22,7 +25,7 @@ class StudentServiceImplTest {
 
     private lateinit var courseCS: Course
     private lateinit var courseIT: Course
-    private lateinit var student: Student
+    private lateinit var students: List<Student>
 
     companion object{
         const val EVENT_CREATE = "CREATE_STUDENT"
@@ -38,11 +41,9 @@ class StudentServiceImplTest {
         studentService = StudentServiceImpl(studentRepository,courseRepository,auditService)
         courseCS = Course(id = 1, name = "CS")
         courseIT = Course(id = 2, name = "IT")
-        student = Student(
-            id = 1,
-            name = "Angelo",
-            email = "angelo@gmail.com",
-            course = courseCS
+        students = listOf(
+            Student(id = 1, name = "Angelo", email = "angelo@gmail.com", age = 23, course = courseCS),
+            Student(id = 2, name = "Luna", email = "luna@email.com", age = 20, course = courseIT)
         )
     }
 
@@ -87,23 +88,23 @@ class StudentServiceImplTest {
 
     }
 
-
     @Test
     fun `should fetch paginated student list`(){
-        val pageable = PageRequest.of(0,5)
-        val student = listOf(student)
 
-        every { studentRepository.findAll(any(),pageable) } returns PageImpl(student)
+        val pageable = PageRequest.of(0,5)
+
+
+        every { studentRepository.findAll(any(),pageable) } returns PageImpl(students)
 
         val result = studentService.getAll(mockk(relaxed = true),pageable)
-        assertEquals(1,result.totalElements)
+        assertEquals(2,result.totalElements)
         assertEquals("Angelo", result.content.first().name)
         verify { auditService.logEvent(EVENT_GET_ALL,any(),eq("system")) }
     }
 
     @Test
     fun `should find student by ID`(){
-        every { studentRepository.findById(1L) } returns Optional.of(student)
+        every { studentRepository.findById(1L) } returns Optional.of(students.first())
 
         val result = studentService.findById(1L)
 
@@ -122,13 +123,50 @@ class StudentServiceImplTest {
 
     }
 
+    @Test
+     fun `should filter student by name`(){
+
+        val filterParams = StudentFilter(name = "Angelo")
+
+        every { studentRepository.findAll(any<Specification<Student>>(), any<Pageable>()) } answers {
+
+            val filtered = students.filter {
+                it.name.contains(filterParams.name!!, ignoreCase = true)
+            }
+            PageImpl(filtered, secondArg(), filtered.size.toLong())
+        }
+
+        val result = studentService.getAll(filterParams, PageRequest.of(0, 10))
+
+        assertEquals(1, result.totalElements)
+        assertEquals("Angelo", result.content.first().name)
+        verify { auditService.logEvent(EVENT_GET_ALL, any(), eq("system")) }
+    }
+    /*fun `should filter student by name`(){
+        val filterParam = StudentFilter(name = "Angelo")
+        every{ studentRepository.findAll(any<Specification<Student>>(),any<Pageable>()) } returns PageImpl(listOf(students.first()))
+        val result = studentService.getAll(filterParam,PageRequest.of(0,10))
+
+        assertEquals(1,result.totalElements)
+        assertEquals("Angelo",result.content.first().name)
+    }*/
+
+    @Test
+    fun `should return empty list when no students match filter`(){
+        val filterParam = StudentFilter(name = "NotFound")
+        every{ studentRepository.findAll(any<Specification<Student>>(),any<Pageable>()) } returns PageImpl(emptyList())
+        val result = studentService.getAll(filterParam,PageRequest.of(0,10))
+
+        assertEquals(0,result.totalElements)
+        assertTrue(result.content.isEmpty())
+    }
 
     @Test
     fun `should group students by course name`() {
-        val csStudent = student
+
         val itStudent = Student(id = 2, name = "Alex", age = 21, email = "alex@example.com", course = courseIT)
 
-        every { studentRepository.findAll() } returns listOf(csStudent, itStudent)
+        every { studentRepository.findAll() } returns students + itStudent
 
         val grouped = studentService.groupByCourse()
 
@@ -137,11 +175,13 @@ class StudentServiceImplTest {
         assertTrue(grouped.containsKey("IT"))
         verify { auditService.logEvent(EVENT_GROUP, any()) }
     }
+
     @Test
     fun `should update student when found`() {
-        val request = UpdateStudentRequest("Angelo","angelonew@gmail.com",23,"IT")
+        val studentToUpdate = students.first()
+        val request = UpdateStudentRequest("Angelo", "angelonew@gmail.com", 23, "IT")
 
-        every { studentRepository.findById(1L) } returns Optional.of(student)
+        every { studentRepository.findById(1L) } returns Optional.of(studentToUpdate)
         every { courseRepository.findByNameIgnoreCase("IT") } returns courseIT
         every { studentRepository.save(any()) } answers { firstArg() }
 
@@ -157,9 +197,10 @@ class StudentServiceImplTest {
 
     @Test
     fun `should create new course if not found when updating student`() {
-        val request = UpdateStudentRequest("Mina","mina@email.com",21,"BSCE")
+        val studentsToUpdate = students.first()
+        val request = UpdateStudentRequest("Mina", "mina@email.com", 21, "BSCE")
 
-        every { studentRepository.findById(1L) } returns Optional.of(student)
+        every { studentRepository.findById(1L) } returns Optional.of(studentsToUpdate)
         every { courseRepository.findByNameIgnoreCase("BSCE") } returns null
         every { courseRepository.save(any()) } returns Course(id = 4, name = "BSCE")
         every { studentRepository.save(any()) } answers { firstArg() }
@@ -188,9 +229,10 @@ class StudentServiceImplTest {
         assertTrue(ex.message!!.contains("not found"))
         verify(exactly = 0) { studentRepository.save(any()) }
     }
+
     @Test
     fun `should delete existing student`() {
-        every { studentRepository.findById(1L) } returns Optional.of(student)
+        every { studentRepository.findById(1L) } returns Optional.of(students.first())
         every { studentRepository.deleteById(1L) } just Runs
 
         studentService.delete(1L)

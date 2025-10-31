@@ -13,6 +13,7 @@ import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
@@ -22,7 +23,8 @@ class UserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtUtil: JWTUtil,
-    private val authenticationManager: AuthenticationManager
+    private val authenticationManager: AuthenticationManager,
+    private val userDetailsService: UserDetailsServiceImpl
 ) {
 
     fun register(createUserDto: CreateUserDto): UserDto {
@@ -45,6 +47,8 @@ class UserService(
 
     fun login(authRequestDto: AuthRequestDto): AuthResponseDto{
         return try {
+            userDetailsService.loadUserByUsername(authRequestDto.username)
+
             val authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(authRequestDto.username, authRequestDto.password)
             )
@@ -56,10 +60,12 @@ class UserService(
 
             AuthResponseDto(token)
 
-        } catch (ex:BadCredentialsException) {
-            throw BadCredentialsException("Invalid username or password")
         } catch (ex: Exception) {
-            throw RuntimeException("Authentication failed: ${ex.message}")
+            when (ex) {
+                is BadCredentialsException -> throw BadCredentialsException("Invalid username or password")
+                is UsernameNotFoundException -> throw UsernameNotFoundException("Invalid username: ${authRequestDto.username}")
+                else -> throw RuntimeException("Authentication failed: ${ex.message}")
+            }
         }
     }
 }

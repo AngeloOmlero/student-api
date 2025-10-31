@@ -7,6 +7,7 @@ import com.example.student_api.dto.UserDto
 import com.example.student_api.model.Users
 import com.example.student_api.repository.UserRepository
 import com.example.student_api.security.JWTUtil
+import com.example.student_api.service.UserDetailsServiceImpl
 import com.example.student_api.service.UserService
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -20,6 +21,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 
 class UserServiceTest {
@@ -27,7 +29,8 @@ class UserServiceTest {
     private val passwordEncoder: PasswordEncoder = mockk()
     private val authenticationManager: AuthenticationManager = mockk()
     private val jwtUtil: JWTUtil = mockk()
-    private val userService = UserService(userRepository, passwordEncoder, jwtUtil, authenticationManager)
+    private val userDetailsService: UserDetailsServiceImpl = mockk()
+    private val userService = UserService(userRepository, passwordEncoder, jwtUtil, authenticationManager,userDetailsService)
 
 
     @BeforeEach
@@ -100,6 +103,7 @@ class UserServiceTest {
         SecurityContextHolder.setContext(securityContext)
         val userDetails = User("angelo", "omlero", emptyList())
 
+        every { userDetailsService.loadUserByUsername(dto.username) } returns userDetails
         every { authenticationManager.authenticate(any()) } returns auth
         every { auth.principal } returns userDetails
         every { jwtUtil.generateToken(any()) } returns "Jwt-token"
@@ -108,6 +112,7 @@ class UserServiceTest {
 
         assertEquals("Jwt-token",response.token)
         verify {
+            userDetailsService.loadUserByUsername(dto.username)
             authenticationManager.authenticate(any())
             jwtUtil.generateToken(userDetails)
         }
@@ -117,12 +122,31 @@ class UserServiceTest {
     fun `should throw BadCredentialsException on invalid login`(){
         val dto = AuthRequestDto("test-user","wrong-pass")
 
-        every { authenticationManager.authenticate(any()) } throws BadCredentialsException("Bad Credentials")
+        every { userDetailsService.loadUserByUsername("test-user") } returns User("test-user", "encoded-pass", emptyList())
 
-        assertThrows<BadCredentialsException> {
+        every { authenticationManager.authenticate(any()) } throws BadCredentialsException("Invalid username or password")
+
+        val exception =assertThrows<BadCredentialsException> {
             userService.login(dto)
         }
-        verify {authenticationManager.authenticate(any()) }
+        assertEquals("Invalid username or password",exception.message)
+        verify (exactly = 1){authenticationManager.authenticate(any()) }
+        verify (exactly = 0){ jwtUtil.generateToken(any()) }
+
+    }
+    @Test
+    fun `should throw UsernameNotFoundException on invalid login`(){
+        val dto = AuthRequestDto("wrong-user","encoded-pass")
+
+        every { userDetailsService.loadUserByUsername("wrong-user") } returns User("test-user", "encoded-pass", emptyList())
+
+        every { authenticationManager.authenticate(any()) } throws UsernameNotFoundException("Invalid Username : ${dto.username}")
+
+        val exception =assertThrows<UsernameNotFoundException> {
+            userService.login(dto)
+        }
+        assertEquals("Invalid username: ${dto.username}",exception.message)
+        verify (exactly = 1){authenticationManager.authenticate(any()) }
         verify (exactly = 0){ jwtUtil.generateToken(any()) }
 
     }
