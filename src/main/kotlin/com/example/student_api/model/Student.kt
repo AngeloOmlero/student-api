@@ -20,17 +20,17 @@ import java.time.LocalDateTime
 @Entity
 @Table(name ="students")
 @EntityListeners(AuditingEntityListener::class)
-data class Student(
+class Student(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id : Long = 0,
+    var id : Long = 0,
 
-    val name: String = "",
+    var  name: String = "",
 
     @Column(nullable = false,unique = true)
-    val email: String ="",
+    var  email: String ="",
 
-    val age: Int = 0,
+    var age: Int = 0,
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
@@ -42,7 +42,7 @@ data class Student(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
-    val course: Course? = null
+    var course: Course? = null
 
 
 )

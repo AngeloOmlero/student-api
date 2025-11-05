@@ -18,13 +18,13 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "courses")
 @EntityListeners(AuditingEntityListener::class)
-data class Course(
+class Course(
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    var id: Long = 0,
     
     @Column(nullable = false, unique = true)
-    val name: String = "",
+    var name: String = "",
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
@@ -32,6 +32,6 @@ data class Course(
 
     @OneToMany(mappedBy = "course", cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JsonIgnore
-    val students: List<Student> = emptyList()
+    var students: List<Student> = emptyList()
 
 )

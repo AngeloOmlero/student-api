@@ -18,7 +18,6 @@ class JWTUtil(
 
 
     fun generateToken(userDetails: UserDetails): String {
-        // Use the first authority and ensure it's prefixed with ROLE_
         val role = userDetails.authorities.firstOrNull()?.authority ?: "ROLE_USER"
         val now = Date()
         val expiryDate = Date(now.time + expiration)

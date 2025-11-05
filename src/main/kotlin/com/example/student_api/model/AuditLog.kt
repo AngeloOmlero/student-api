@@ -10,24 +10,24 @@ import java.time.LocalDateTime
 
 @Entity
 @Table(name = "audit_logs")
-data class AuditLog(
+ class AuditLog(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    var id: Long = 0,
 
     @Column(nullable = false)
-    val action: String = "",
+    var action: String = "",
 
     @Column(nullable = false)
-    val endpoint: String = "",
+    var endpoint: String = "",
 
     @Column(nullable = false)
-    val details: String = "",
+    var details: String = "",
 
     @Column(name = "timestamp", nullable = false)
-    val timestamp: LocalDateTime = LocalDateTime.now(),
+    var timestamp: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "user_info", nullable = false)
-    val user: String = "system" // Placeholder
+    var user: String = "system" // Placeholder
 
 )

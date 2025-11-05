@@ -28,7 +28,9 @@ class UserService(
 ) {
 
     fun register(createUserDto: CreateUserDto): UserDto {
-        // Default to USER role if the provided role is invalid or null
+        userRepository.findByUsername(createUserDto.username)
+             ?.let { throw IllegalArgumentException("Username '${createUserDto.username}' is already taken.") }
+
         val role = try {
             Role.valueOf(createUserDto.role.uppercase())
         } catch (e: Exception) {

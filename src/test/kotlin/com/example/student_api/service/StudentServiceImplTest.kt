@@ -124,7 +124,7 @@ class StudentServiceImplTest {
     }
 
     @Test
-     fun `should filter student by name`(){
+    fun `should filter student by name`(){
 
         val filterParams = StudentFilter(name = "Angelo")
 
@@ -142,18 +142,50 @@ class StudentServiceImplTest {
         assertEquals("Angelo", result.content.first().name)
         verify { auditService.logEvent(EVENT_GET_ALL, any(), eq("system")) }
     }
-    /*fun `should filter student by name`(){
-        val filterParam = StudentFilter(name = "Angelo")
-        every{ studentRepository.findAll(any<Specification<Student>>(),any<Pageable>()) } returns PageImpl(listOf(students.first()))
-        val result = studentService.getAll(filterParam,PageRequest.of(0,10))
 
-        assertEquals(1,result.totalElements)
-        assertEquals("Angelo",result.content.first().name)
-    }*/
+    @Test
+    fun `should filter student by age`(){
+
+        val filterParams = StudentFilter(age = 23)
+
+        every { studentRepository.findAll(any<Specification<Student>>(), any<Pageable>()) } answers {
+
+            val filtered = students.filter {
+                it.age.equals(filterParams.age!!)
+            }
+            PageImpl(filtered, secondArg(), filtered.size.toLong())
+        }
+
+        val result = studentService.getAll(filterParams, PageRequest.of(0, 10))
+
+        assertEquals(1, result.totalElements)
+        assertEquals(23, result.content.first().age)
+        verify { auditService.logEvent(EVENT_GET_ALL, any(), eq("system")) }
+    }
+
+    @Test
+    fun `should filter student by email`(){
+
+        val filterParams = StudentFilter(email = "angelo@gmail.com")
+
+        every { studentRepository.findAll(any<Specification<Student>>(), any<Pageable>()) } answers {
+
+            val filtered = students.filter {
+                it.email.contains(filterParams.email!!, ignoreCase = true)
+            }
+            PageImpl(filtered, secondArg(), filtered.size.toLong())
+        }
+
+        val result = studentService.getAll(filterParams, PageRequest.of(0, 10))
+
+        assertEquals(1, result.totalElements)
+        assertEquals("angelo@gmail.com", result.content.first().email)
+        verify { auditService.logEvent(EVENT_GET_ALL, any(), eq("system")) }
+    }
 
     @Test
     fun `should return empty list when no students match filter`(){
-        val filterParam = StudentFilter(name = "NotFound")
+        val filterParam = StudentFilter(name = "No Match",age = 11,email = "nomatch@email.com",course = "NMCourse")
         every{ studentRepository.findAll(any<Specification<Student>>(),any<Pageable>()) } returns PageImpl(emptyList())
         val result = studentService.getAll(filterParam,PageRequest.of(0,10))
 

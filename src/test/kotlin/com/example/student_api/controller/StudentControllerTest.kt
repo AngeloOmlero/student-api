@@ -142,6 +142,7 @@ class StudentControllerTest {
             .andExpect(jsonPath("$.data").isArray)
             .andExpect(jsonPath("$.meta.page").value(0))
             .andExpect(jsonPath("$.meta.size").value(2))
+            .andExpect(jsonPath("$.meta.totalElements").value(3))
             .andDo(print())
     }
 
@@ -290,7 +291,7 @@ class StudentControllerTest {
                 .content(jsonOf(update))
         )
             .andExpect(status().isConflict)
-            .andExpect(jsonPath("$.message").value("Creation failed: A student with the email 'angelo@email.com' already exists."))
+            .andExpect(jsonPath("$.message").value("Creation failed: A student with the email '${update.email}' already exists."))
             .andDo(print())
 
     }

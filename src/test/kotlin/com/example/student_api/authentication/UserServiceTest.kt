@@ -4,6 +4,7 @@ import com.example.student_api.dto.AuthRequestDto
 import com.example.student_api.dto.AuthResponseDto
 import com.example.student_api.dto.CreateUserDto
 import com.example.student_api.dto.UserDto
+import com.example.student_api.model.Role
 import com.example.student_api.model.Users
 import com.example.student_api.repository.UserRepository
 import com.example.student_api.security.JWTUtil
@@ -42,6 +43,7 @@ class UserServiceTest {
     fun ` should register new user with valid role` (){
         val dto = CreateUserDto("angelo","omlero","ADMIN")
 
+        every { userRepository.findByUsername(dto.username) } returns null
         every { passwordEncoder.encode(dto.password) } returns "encodePass"
         every { userRepository.save(any()) } answers { firstArg() as Users }
 
@@ -51,6 +53,32 @@ class UserServiceTest {
         assertEquals("ADMIN",result.role)
 
         verify {
+            userRepository.findByUsername(dto.username)
+            passwordEncoder.encode(dto.password)
+            userRepository.save(any())
+        }
+
+    }
+
+    @Test
+    fun `should throw IllegalArgumentException when username exist`(){
+        val dto = CreateUserDto("angelo","omlero","ADMIN")
+
+        val existingUser = Users(
+            id = 1,
+            username = "angelo",
+            password = "EncodedPass",
+            role = Role.ADMIN
+        )
+        every { userRepository.findByUsername(dto.username) } returns existingUser
+
+        val ex = assertThrows<IllegalArgumentException> {
+            userService.register(dto)
+        }
+        assertEquals("Username '${dto.username}' is already taken.",ex.message)
+
+        verify(exactly = 1){userRepository.findByUsername(dto.username)}
+        verify(exactly = 0){
             passwordEncoder.encode(dto.password)
             userRepository.save(any())
         }
@@ -61,6 +89,7 @@ class UserServiceTest {
     fun `should register user with default USER role when invalid role provided`(){
         val dto = CreateUserDto("angelo","omlero","INVALID")
 
+        every { userRepository.findByUsername(dto.username) } returns null
         every { passwordEncoder.encode(dto.password) } returns "encodePass"
         every { userRepository.save(any()) } answers {firstArg() as Users}
 
@@ -80,6 +109,7 @@ class UserServiceTest {
     fun `should register user with null role defaults to USER`(){
         val dto = CreateUserDto("angelo","omlero","")
 
+        every { userRepository.findByUsername(dto.username) } returns null
         every { passwordEncoder.encode(dto.password)} returns "encodePass"
         every {userRepository.save(any()) } answers {firstArg() as Users}
 
@@ -155,6 +185,7 @@ class UserServiceTest {
     fun `should handle empty password registration`() {
         val dto = CreateUserDto("angelo","","Admin")
 
+        every { userRepository.findByUsername(dto.username) } returns null
         every{passwordEncoder.encode(dto.password)} returns "encodedPass"
         every { userRepository.save(any())} answers {firstArg() as Users}
 
@@ -170,6 +201,5 @@ class UserServiceTest {
 
 
     }
-
 
 }

@@ -22,10 +22,10 @@ data class UpdateStudentRequest (
     val courseName: String
 )
 
-fun UpdateStudentRequest.toUpdate(student: Student,course: Course): Student =
-    student.copy(
-        name = this.name,
-        email = this.email,
-        age = this.age,
-        course = course
-    )
+fun UpdateStudentRequest.toUpdate(student: Student,course: Course): Student {
+    student.name = this.name
+    student.email = this.email
+    student.age = this.age
+    student.course = course
+    return student
+}
