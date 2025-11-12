@@ -12,8 +12,6 @@ data class PageMeta(
     val size: Int,
     val totalPage:Int,
     val totalElements: Long,
-    val isFirst: Boolean,
-    val isLast: Boolean,
 )
 
 fun <T> Page <T>.toPageResponse(): PageResponse<T> =
@@ -24,7 +22,5 @@ fun <T> Page <T>.toPageResponse(): PageResponse<T> =
             size = size,
             totalPage = totalPages,
             totalElements = totalElements,
-            isFirst = isFirst,
-            isLast = isFirst
         )
     )
