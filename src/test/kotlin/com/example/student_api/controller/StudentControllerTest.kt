@@ -78,7 +78,7 @@ class StudentControllerTest {
 
     private fun createStudent(request: CreateStudentRequest) =
         mockMvc.perform(
-            post("/students")
+            post("/api/students")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(request))
         ).andExpect(status().isCreated)
@@ -92,7 +92,7 @@ class StudentControllerTest {
         val student = sampleStudents.first()
         val created = createStudent(student)
 
-        mockMvc.perform(get("/students/${created["id"].asLong()}"))
+        mockMvc.perform(get("/api/students/${created["id"].asLong()}"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.name").value(student.name))
             .andExpect(jsonPath("$.email").value(student.email))
@@ -107,7 +107,7 @@ class StudentControllerTest {
         val student = createStudent(sampleStudents.first())
 
         mockMvc.perform(
-            post("/students")
+            post("/api/students")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(student))
         )
@@ -120,7 +120,7 @@ class StudentControllerTest {
     fun `POST should return 400 for invalid student`() {
         val invalidStudent = CreateStudentRequest("", "invalid-email", 0, "")
         mockMvc.perform(
-            post("/students")
+            post("/api/students")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(invalidStudent))
         )
@@ -134,7 +134,7 @@ class StudentControllerTest {
         sampleStudents.forEach { createStudent(it) }
 
         mockMvc.perform(
-            get("/students")
+            get("/api/students")
                 .param("page", "0")
                 .param("size", "2")
         )
@@ -153,7 +153,7 @@ class StudentControllerTest {
         val student = sampleStudents.first()
 
         mockMvc.perform(
-            get("/students")
+            get("/api/students")
                 .param("name", student.name)
                 .param("email", student.email)
                 .param("age", student.age.toString())
@@ -172,7 +172,7 @@ class StudentControllerTest {
         sampleStudents.forEach { createStudent(it) }
 
         mockMvc.perform(
-            get("/students")
+            get("/api/students")
                 .param("name", "Angelo")
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -189,7 +189,7 @@ class StudentControllerTest {
         sampleStudents.forEach { createStudent(it) }
 
         mockMvc.perform(
-            get("/students")
+            get("/api/students")
                 .param("courseName", "CS")
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -208,7 +208,7 @@ class StudentControllerTest {
         val created = createStudent(sampleStudents.first())
         val id = created["id"].asLong()
 
-        mockMvc.perform(get("/students/$id"))
+        mockMvc.perform(get("/api/students/$id"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(id))
             .andExpect(jsonPath("$.name").value("Angelo"))
@@ -220,7 +220,7 @@ class StudentControllerTest {
 
     @Test
     fun `GET should return 404 for non-existent student`() {
-        mockMvc.perform(get("/students/999"))
+        mockMvc.perform(get("/api/students/999"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error").exists())
             .andDo(print())
@@ -233,7 +233,7 @@ class StudentControllerTest {
 
         val updateRequest = UpdateStudentRequest("Angelo", "angelo@email.com", 23, "CS")
         mockMvc.perform(
-            put("/students/${student.id}")
+            put("/api/students/${student.id}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(updateRequest))
         )
@@ -249,7 +249,7 @@ class StudentControllerTest {
     fun `PUT should return 404 for non-existent student`() {
         val updateRequest = UpdateStudentRequest("Angelo", "angelo@email.com", 23, "CS")
         mockMvc.perform(
-            put("/students/999")
+            put("/api/students/999")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(updateRequest))
         )
@@ -265,7 +265,7 @@ class StudentControllerTest {
         val invalidRequest = UpdateStudentRequest("", "", 0, "")
 
         mockMvc.perform(
-            put("/students/$id")
+            put("/api/students/$id")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(invalidRequest))
         )
@@ -286,7 +286,7 @@ class StudentControllerTest {
         )
 
         mockMvc.perform(
-            put("/students/${studentToUpdate["id"].asLong()}")
+            put("/api/students/${studentToUpdate["id"].asLong()}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonOf(update))
         )
@@ -301,14 +301,14 @@ class StudentControllerTest {
         val course = createCourse("CS")
         val student = studentRepository.save(Student(name = "Angelo", email = "angelo@email.com", age=23, course =  course))
 
-        mockMvc.perform(delete("/students/${student.id}"))
+        mockMvc.perform(delete("/api/students/${student.id}"))
             .andExpect(status().isNoContent)
             .andDo(print())
     }
 
     @Test
     fun `DELETE should return 404 for non-existent student`() {
-        mockMvc.perform(delete("/students/999"))
+        mockMvc.perform(delete("/api/students/999"))
             .andExpect(status().isNotFound)
             .andDo(print())
     }
@@ -317,7 +317,7 @@ class StudentControllerTest {
     fun `GET should group students by course successfully`() {
         sampleStudents.forEach { createStudent(it) }
 
-        mockMvc.perform(get("/students/courses"))
+        mockMvc.perform(get("/api/students/courses"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").isNotEmpty)
             .andDo(print())
@@ -325,7 +325,7 @@ class StudentControllerTest {
 
     @Test
     fun `GET should return empty grouping when no students exist`() {
-        mockMvc.perform(get("/students/courses"))
+        mockMvc.perform(get("/api/students/courses"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").isEmpty)
             .andDo(print())

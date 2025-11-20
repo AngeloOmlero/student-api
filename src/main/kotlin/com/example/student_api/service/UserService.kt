@@ -40,10 +40,16 @@ class UserService(
         val user = Users(
             username = createUserDto.username,
             password = passwordEncoder.encode(createUserDto.password),
+            fullName = createUserDto.fullName,
             role = role
         )
         val savedUser = userRepository.save(user)
-        return UserDto(savedUser.id, savedUser.username, savedUser.role.name)
+        return UserDto(savedUser.id, savedUser.username, savedUser.fullName,savedUser.role.name)
+    }
+    fun getCurrentUser(username: String): UserDto {
+        val user = userRepository.findByUsername(username)
+            ?: throw UsernameNotFoundException("User not found: $username")
+        return UserDto(user.id, user.username, user.fullName,user.role.name)
     }
 
 

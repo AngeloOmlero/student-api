@@ -16,6 +16,9 @@ class Users(
     @Column(nullable = false)
     var  password: String = "",
 
+    @Column(name="full_name",nullable = false)
+    var  fullName: String = "",
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var  role: Role = Role.USER

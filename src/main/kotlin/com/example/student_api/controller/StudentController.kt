@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import org.apache.commons.logging.LogFactory
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
@@ -47,7 +48,8 @@ class StudentController(private val service: StudentService) {
     fun getAll(
         @ModelAttribute
         @Parameter(hidden = true) filter: StudentFilter,
-        @PageableDefault(sort = ["id"]) pageable: Pageable
+        @PageableDefault(sort = ["id"],
+            direction = Sort.Direction.DESC) pageable: Pageable
     ) = logs.info("GET /students - Filter: $filter, Pageable: page=${pageable.pageNumber}, size=${pageable.pageSize}").let {
         val result = service.getAll(filter, pageable).toPageResponse()
         logs.info("GET /students - Fetched ${result.meta.totalElements} students")

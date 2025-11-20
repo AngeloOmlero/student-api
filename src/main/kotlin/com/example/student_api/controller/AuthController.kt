@@ -6,7 +6,10 @@ import com.example.student_api.dto.CreateUserDto
 import com.example.student_api.dto.UserDto
 import com.example.student_api.service.UserService
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -30,5 +33,9 @@ class AuthController(
     @ResponseStatus(HttpStatus.OK)
     fun login(@RequestBody authRequestDto: AuthRequestDto): AuthResponseDto {
         return userService.login(authRequestDto)
+    }
+    @GetMapping("/me")
+    fun getCurrentUser(@AuthenticationPrincipal userDetails: UserDetails): UserDto {
+        return userService.getCurrentUser(userDetails.username)
     }
 }

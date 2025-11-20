@@ -36,8 +36,9 @@ class SecurityConfig(private val jwtAuthFilter: JwtAuthFilter
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
-            .authorizeHttpRequests {
-                it.requestMatchers("/api/auth/**").permitAll()
+            .authorizeHttpRequests { auth ->
+                auth.requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/students").hasRole("ADMIN")
                     .anyRequest().authenticated()
             }
             .cors(Customizer.withDefaults())
