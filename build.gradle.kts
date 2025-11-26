@@ -35,6 +35,7 @@ dependencies {
 
     implementation("org.apache.commons:commons-lang3:3.18.0") // latest safe version
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    implementation ("org.springframework.boot:spring-boot-starter-websocket")
 
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")

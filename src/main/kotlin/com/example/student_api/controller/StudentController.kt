@@ -40,7 +40,7 @@ class StudentController(private val service: StudentService) {
         logs.info("POST /students - Request: $request").let {
             val student = service.save(request)
             logs.info("POST /students - Response: ${request.name} added")
-            mapOf("student added" to student)
+            student
         }
 
     @GetMapping
@@ -72,7 +72,7 @@ class StudentController(private val service: StudentService) {
         logs.info("PUT /students/$id - Request: $request").let {
             val updated = service.update(id, request)
             logs.info("PUT /students/$id - Response: $updated")
-            mapOf("Updated student" to updated)
+            updated
         }
 
     @DeleteMapping("/{id}")

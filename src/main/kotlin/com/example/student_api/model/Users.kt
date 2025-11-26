@@ -22,7 +22,9 @@ class Users(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var  role: Role = Role.USER
-)
+){
+    constructor() : this(0, "", "", "", Role.USER)
+}
 
 enum class Role {
     ADMIN,

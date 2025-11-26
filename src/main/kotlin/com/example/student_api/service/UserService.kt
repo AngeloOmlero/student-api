@@ -76,4 +76,8 @@ class UserService(
             }
         }
     }
+
+    fun getAllUsers(): List<UserDto> {
+        return userRepository.findAll().map { UserDto(it.id, it.username, it.fullName, it.role.name) }
+    }
 }
