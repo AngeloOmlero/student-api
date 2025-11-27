@@ -41,7 +41,7 @@ The Student Management application is a full-stack solution designed to manage s
 
 *   **Backend:** Built with Kotlin and the Spring Boot framework, providing a robust RESTful API, WebSocket endpoints for real-time features, and secure data handling.
 *   **Frontend:** Developed using Vue.js and TypeScript, offering a dynamic and responsive user interface for interacting with the backend services.
-*     *Note:* clone this repository: https://github.com/AngeloOmlero/student-management.git
+*    **Note:** clone this repository: https://github.com/AngeloOmlero/student-management.git
 
 The application supports user authentication via JWT, real-time private messaging, file sharing within chat, typing indicators, and online presence tracking.
 
