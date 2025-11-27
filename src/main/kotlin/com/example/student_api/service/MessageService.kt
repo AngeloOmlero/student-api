@@ -27,7 +27,8 @@ class MessageService(
         val message = Message(
             sender = sender,
             receiver = receiver,
-            content = dto.content
+            content = dto.content,
+            fileUrl = dto.fileUrl
         )
         return messageRepository.save(message)
 

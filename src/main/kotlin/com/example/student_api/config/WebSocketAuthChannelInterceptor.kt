@@ -12,6 +12,7 @@ import org.springframework.messaging.support.MessageHeaderAccessor
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.stereotype.Component
 import org.slf4j.LoggerFactory
+import org.springframework.security.core.Authentication // Import Authentication
 
 @Component
 class WebSocketAuthChannelInterceptor(
@@ -24,37 +25,53 @@ class WebSocketAuthChannelInterceptor(
     override fun preSend(message: Message<*>, channel: MessageChannel): Message<*>? {
         val accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor::class.java)
 
-        if (StompCommand.CONNECT == accessor?.command) {
-            val authorizationHeader = accessor.getFirstNativeHeader("Authorization")
+        when (accessor?.command) {
+            StompCommand.CONNECT -> {
+                val authorizationHeader = accessor.getFirstNativeHeader("Authorization")
 
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                val jwt = authorizationHeader.substring(7)
+                if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                    val jwt = authorizationHeader.substring(7)
 
-                return runCatching {
-                    val username = jwtUtil.extractUsername(jwt)
+                    return runCatching {
+                        val username = jwtUtil.extractUsername(jwt)
 
-                    if (username != null && jwtUtil.validateToken(jwt)) {
-                        val userDetails = userDetailsService.loadUserByUsername(username)
-                        val authentication = UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.authorities
-                        )
-                        // CRITICAL FIX: Use accessor.setUser() to properly set the principal
-                        accessor.setUser(authentication)
-                        logger.info("STOMP CONNECT authenticated user: $username")
-                        message
-                    } else {
-                        logger.warn("STOMP CONNECT rejected: JWT validation failed or username not found.")
+                        if (username != null && jwtUtil.validateToken(jwt)) {
+                            val userDetails = userDetailsService.loadUserByUsername(username)
+                            val authentication = UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.authorities
+                            )
+                            accessor.setUser(authentication)
+                            logger.info("STOMP CONNECT authenticated user: $username")
+                            message
+                        } else {
+                            logger.warn("STOMP CONNECT rejected: JWT validation failed or username not found.")
+                            null
+                        }
+                    }.getOrElse { e ->
+                        logger.error("STOMP CONNECT failed due to token processing error. Details: ${e.message}", e)
                         null
                     }
-                }.getOrElse { e ->
-                    logger.error("STOMP CONNECT failed due to token processing error. Details: ${e.message}", e)
-                    null
+                } else {
+                    logger.warn("STOMP CONNECT rejected: No valid Authorization header found.")
+                    return null
                 }
-            } else {
-                logger.warn("STOMP CONNECT rejected: No valid Authorization header found.")
-                return null
+            }
+            StompCommand.SEND -> {
+                val userPrincipal = accessor.user
+                // Safely cast to Authentication and check if it's authenticated
+                val isAuthenticated = (userPrincipal as? Authentication)?.isAuthenticated ?: false
+
+                if (!isAuthenticated) {
+                    logger.warn("STOMP SEND rejected: Unauthenticated user attempting to send message.")
+                    return null // Reject unauthenticated SEND messages
+                }
+                logger.debug("STOMP SEND from authenticated user: ${userPrincipal?.name}")
+                return message
+            }
+            else -> {
+                // For other commands (SUBSCRIBE, UNSUBSCRIBE, DISCONNECT, etc.), just pass them through
+                return message
             }
         }
-        return message
     }
 }

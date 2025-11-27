@@ -1,5 +1,6 @@
 package com.example.student_api.controller
 
+import com.example.student_api.dto.MessageType
 import com.example.student_api.dto.PrivateMessageDto
 import com.example.student_api.dto.toDto
 import com.example.student_api.service.MessageService
@@ -14,22 +15,33 @@ class PrivateChatController(
 ) {
     @MessageMapping("/chat.privateMessage")
     fun sendPrivateMessage(incoming: PrivateMessageDto){
-        val message = messageService.savePrivateMessage(incoming)
-        messageService.markAsDelivered(message.id)
+        if (incoming.type == MessageType.CHAT) {
+            val message = messageService.savePrivateMessage(incoming)
+            messageService.markAsDelivered(message.id)
 
-        val dto = message.toDto()
+            val dto = message.toDto()
 
+            messagingTemp.convertAndSendToUser(
+                incoming.receiver,
+                "/queue/private",
+                dto
+            )
+
+            messagingTemp.convertAndSendToUser(
+                incoming.sender,
+                "/queue/private",
+                dto
+            )
+        }
+    }
+
+    @MessageMapping("/chat.typing")
+    fun sendTypingStatus(typingStatus: PrivateMessageDto) {
+        // Only forward typing status, do not persist
         messagingTemp.convertAndSendToUser(
-            incoming.receiver,
+            typingStatus.receiver,
             "/queue/private",
-            dto
+            typingStatus
         )
-
-        messagingTemp.convertAndSendToUser(
-            incoming.sender,
-            "/queue/private",
-            dto
-        )
-
     }
 }

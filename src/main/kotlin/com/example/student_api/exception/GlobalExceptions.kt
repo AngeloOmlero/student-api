@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import java.lang.RuntimeException
 import java.time.LocalDateTime
 
@@ -28,6 +29,11 @@ class GlobalExceptions {
     fun handleValidationErrors(ex: MethodArgumentNotValidException): ResponseEntity<Map<String, Any>> {
         val errors = ex.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Invalid value") }
         return errorResponse(HttpStatus.BAD_REQUEST, "Validation Error", errors)
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleMaxSizeException(ex: MaxUploadSizeExceededException): ResponseEntity<Map<String, Any>> {
+        return errorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File is too large!")
     }
 
     @ExceptionHandler(Exception::class)

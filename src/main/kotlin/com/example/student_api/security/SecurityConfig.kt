@@ -38,7 +38,7 @@ class SecurityConfig(private val jwtAuthFilter: JwtAuthFilter
             .csrf { it.disable() }
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/api/users/**").permitAll()
+                    .requestMatchers("/api/users/**","/api/files/**").permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     .requestMatchers("/api/students").hasRole("ADMIN")
                     .anyRequest().authenticated()

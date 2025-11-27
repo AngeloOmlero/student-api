@@ -29,8 +29,8 @@ class Message(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id")
     var receiver: Users,
-
-
+    @Column(name = "file_url")
+    var fileUrl: String? = null
 ){
-    constructor(): this (0, "", Instant.now(), false, false, Users(), Users())
+    constructor(): this (0, "", Instant.now(), false, false, Users(), Users(), null)
 }

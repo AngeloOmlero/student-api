@@ -24,7 +24,8 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtUtil: JWTUtil,
     private val authenticationManager: AuthenticationManager,
-    private val userDetailsService: UserDetailsServiceImpl
+    private val userDetailsService: UserDetailsServiceImpl,
+    private val userPresenceService: UserPresenceService // Inject UserPresenceService
 ) {
 
     fun register(createUserDto: CreateUserDto): UserDto {
@@ -44,12 +45,12 @@ class UserService(
             role = role
         )
         val savedUser = userRepository.save(user)
-        return UserDto(savedUser.id, savedUser.username, savedUser.fullName,savedUser.role.name)
+        return UserDto(savedUser.id, savedUser.username, savedUser.fullName,savedUser.role.name, false) // New user is offline by default
     }
     fun getCurrentUser(username: String): UserDto {
         val user = userRepository.findByUsername(username)
             ?: throw UsernameNotFoundException("User not found: $username")
-        return UserDto(user.id, user.username, user.fullName,user.role.name)
+        return UserDto(user.id, user.username, user.fullName,user.role.name, userPresenceService.isUserOnline(user.username))
     }
 
 
@@ -78,6 +79,8 @@ class UserService(
     }
 
     fun getAllUsers(): List<UserDto> {
-        return userRepository.findAll().map { UserDto(it.id, it.username, it.fullName, it.role.name) }
+        return userRepository.findAll().map {
+            UserDto(it.id, it.username, it.fullName, it.role.name, userPresenceService.isUserOnline(it.username))
+        }
     }
 }
